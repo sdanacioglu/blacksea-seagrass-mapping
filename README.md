@@ -1,7 +1,6 @@
 # Black Sea Seagrass Mapping — Sentinel-2 + Machine Learning
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![Google Earth Engine](https://img.shields.io/badge/GEE-JavaScript-orange.svg)](https://earthengine.google.com/)
 [![Status: pre-publication](https://img.shields.io/badge/status-pre--publication-lightgrey.svg)]()
 
@@ -11,7 +10,7 @@ Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast
 
 ## Overview
 
-This repository contains the complete code base and methodology documentation for the study:
+This repository contains the core code base and methodology documentation for the study:
 
 > **Danacıoğlu, Ş.** (2026). *Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama* [Sentinel-2 based seagrass mapping in the Western Black Sea]. *Geomatik Dergisi* (under preparation).
 
@@ -49,9 +48,9 @@ blacksea-seagrass-mapping/
 ├── code/
 │   ├── gee/
 │   │   └── seagrass_mapping_v7.js     ← Main Google Earth Engine pipeline
-│   ├── arcgis/                          ← ArcGIS Pro Python (added later)
-│   └── python/                          ← Figure generation (added later)
-│       └── requirements.txt
+│   └── arcgis/
+│       ├── extract_pixels.py          ← Per-pixel feature extraction
+│       └── polygon_triage.py          ← Training-polygon quality control
 │
 └── docs/
     ├── METHODOLOGY.md     ← Step-by-step methodological description
@@ -66,8 +65,7 @@ blacksea-seagrass-mapping/
 ### Prerequisites
 
 - [Google Earth Engine account](https://earthengine.google.com/signup/)
-- Python 3.11+
-- ArcGIS Pro 3.x (optional — for polygon-level analysis)
+- ArcGIS Pro 3.x (optional — for polygon-level analysis and pixel extraction)
 
 ### 1. GEE workflow
 
@@ -85,14 +83,7 @@ folder: 'YOUR_DRIVE_FOLDER'
 
 Then click **Run**.
 
-### 2. Python figures (optional)
-
-```bash
-cd code/python
-pip install -r requirements.txt
-```
-
-### 3. ArcGIS analysis (optional)
+### 2. ArcGIS analysis (optional)
 
 In ArcGIS Pro's Python Window:
 ```python
@@ -130,7 +121,7 @@ GitHub also provides a **"Cite this repository"** button (powered by `CITATION.c
 ## License
 
 - **Code**: [MIT License](LICENSE) — permissive, reuse welcome with attribution
-- **Documentation & figures**: [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution required
+- **Documentation**: [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution required
 
 ---
 

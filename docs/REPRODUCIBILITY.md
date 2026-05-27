@@ -1,6 +1,6 @@
 # Reproducibility Guide
 
-Step-by-step instructions to reproduce the published results.
+Step-by-step instructions to reproduce the published classification results.
 
 ---
 
@@ -8,8 +8,7 @@ Step-by-step instructions to reproduce the published results.
 
 1. **Google Earth Engine account** ([free signup](https://earthengine.google.com/signup/))
 2. **GEE Cloud Project** with assets and storage enabled
-3. **Python 3.11+** with `matplotlib`, `pandas`, `numpy`
-4. (Optional) **ArcGIS Pro 3.x** for polygon-level analysis
+3. (Optional) **ArcGIS Pro 3.x** for polygon-level analysis and pixel extraction
 
 ---
 
@@ -57,27 +56,28 @@ Upload the following to your GEE Cloud Project as assets:
 
 ---
 
-## Step 3 — Reproduce figures (optional)
+## Step 3 — ArcGIS analysis (optional)
 
-```bash
-cd code/python
-pip install -r requirements.txt
-python figure_4_vim.py
-python figure_5_confusion_matrices.py
-python figure_6_fold_comparison.py
-```
+For polygon-level quality control and per-pixel feature extraction, two ArcGIS Pro scripts are provided:
 
-For spectral characterization figures (Figures 9–11), first run the ArcGIS pixel extraction script to generate the CSV:
+### Polygon triage
+Validates training polygons against six spectral/index criteria per class.
 
 ```python
 # In ArcGIS Pro Python Window
+exec(open(r"path/to/code/arcgis/polygon_triage.py").read())
+```
+
+Output: CSV with per-polygon decision (`DEFINITE` / `SUSPECT` / `REJECT` / `MISSING`).
+
+### Pixel extraction
+Extracts per-pixel feature values within each training polygon for spectral analysis.
+
+```python
 exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 ```
 
-Then:
-```bash
-python figure_9_10_11_spectral.py
-```
+Output: CSV with all 13 feature values per pixel, joined with class labels.
 
 ---
 
