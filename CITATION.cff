@@ -9,12 +9,13 @@ authors:
     affiliation: "Independent researcher (GIS/Remote Sensing), Türkiye"
 repository-code: "https://github.com/sdanacioglu/blacksea-seagrass-mapping"
 abstract: >
-  Sentinel-2 ve Google Earth Engine tabanlı, Rastgele Orman, Destek Vektör
-  Makineleri ve Gradyan Artırma sınıflandırıcılarıyla Batı Karadeniz
-  (İğneada–Karaburun) kıyısında deniz çayırı haritalama çalışmasının kodu,
-  yöntem belgeleri ve analiz scriptleri. 13 öznitelikli yığın görüntü,
-  3-katlı mekânsal çapraz doğrulama, tile-bağımsız Hedley düzeltmesi ve
-  lineer radyometrik normalizasyon ile biyofiziksel maskeleme dahildir.
+  Sentinel-2 ve Google Earth Engine tabanlı, Rastgele Orman ve Destek Vektör
+  Makineleri sınıflandırıcılarıyla Batı Karadeniz (İğneada–Karaburun)
+  kıyısında deniz çayırı haritalama çalışmasının kodu, yöntem belgeleri ve
+  analiz scriptleri. 11 öznitelikli yığın görüntü, 3-katlı mekânsal çapraz
+  doğrulama, tile-bağımsız Hedley düzeltmesi ve lineer radyometrik
+  normalizasyon ile biyofiziksel maskeleme dahildir. Nihai harita ürünü
+  RF ∩ SVM kesişimine dayanan yüksek-güven haritasıdır.
 keywords:
   - seagrass
   - Zostera marina
@@ -25,10 +26,9 @@ keywords:
   - machine learning
   - random forest
   - support vector machine
-  - gradient boosting
   - Black Sea
   - habitat mapping
   - Case-2 waters
 license: MIT
-version: "0.1.0"
-date-released: "2026-05-27"
+version: "0.2.0"
+date-released: "2026-06-01"

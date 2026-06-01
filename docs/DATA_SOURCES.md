@@ -18,14 +18,14 @@ All datasets used in this study are publicly available via Google Earth Engine o
 
 ## Bathymetry
 
-### ETOPO1 Global Relief Model
-- **GEE asset**: `NOAA/NGDC/ETOPO1`
-- **Provider**: NOAA National Centers for Environmental Information
-- **Resolution**: 1 arc-minute (~1.8 km)
-- **Use**: Coarse depth mask (≤ 15 m) for biophysical filtering
-- **Reference**: Amante & Eakins (2009)
+### GEBCO 2023 (community asset)
+- **GEE community asset**: GEBCO 2023 grid via Sat-IO community datasets ([awesome-gee-community-datasets](https://samapriya.github.io/awesome-gee-community-datasets/))
+- **Provider**: General Bathymetric Chart of the Oceans (GEBCO)
+- **Resolution**: ~450 m (15 arc-seconds)
+- **Use**: Coastal depth mask (≤ 15 m) for biophysical filtering
+- **Reference**: GEBCO Compilation Group (2023)
 
-*Alternative*: GEBCO 2023 grid (via [Sat-IO community](https://samapriya.github.io/awesome-gee-community-datasets/)) at ~450 m resolution offers finer detail for coastal areas if available in your region.
+*Alternative*: NOAA ETOPO1 (`NOAA/NGDC/ETOPO1`) at ~1.8 km resolution may be used if GEBCO community asset is unavailable, but GEBCO is preferred for coastal applications.
 
 ---
 
@@ -58,7 +58,7 @@ All datasets used in this study are publicly available via Google Earth Engine o
 |---|---|---|
 | Google Earth Engine | Code Editor (web) | Main processing pipeline |
 | ArcGIS Pro | 3.x | Polygon digitization + pixel extraction |
-| Python | 3.11+ | Figure generation |
+| Python | 3.11+ | Figure generation (not part of public release) |
 | matplotlib | ≥ 3.7 | Plotting |
 | pandas | ≥ 2.0 | Data handling |
 | numpy | ≥ 1.24 | Numerical operations |
@@ -71,5 +71,5 @@ All datasets used in this study are publicly available via Google Earth Engine o
 When using this code in a publication, please cite the relevant data providers:
 
 - ESA Sentinel-2 mission
-- NOAA ETOPO1 (Amante & Eakins, 2009)
+- GEBCO Compilation Group (2023)
 - JRC Global Surface Water (Pekel et al., 2016)

@@ -37,7 +37,7 @@ Upload the following to your GEE Cloud Project as assets:
 
 ## Step 2 — Configure and run the GEE pipeline
 
-1. Open [`code/gee/seagrass_mapping_v7.js`](../code/gee/seagrass_mapping_v7.js) in the [GEE Code Editor](https://code.earthengine.google.com/)
+1. Open [`code/gee/seagrass_mapping_v8.js`](../code/gee/seagrass_mapping_v8.js) in the [GEE Code Editor](https://code.earthengine.google.com/)
 2. Replace placeholder asset paths with your own
 3. (Optional) Adjust date range, cloud threshold, or tile split longitude in Section 4 if your study area differs
 4. Click **Run** — pipeline outputs will appear in the console (~3–10 min)
@@ -49,10 +49,10 @@ Upload the following to your GEE Cloud Project as assets:
 - Linear matching confirmation
 - Composite pixel count (~150,000)
 - Polygon counts per block (G/O/K)
-- Balanced sample sizes (e.g., 2,460 pixels)
-- 3-fold CV results for RF, SVM (with grid search), and GBM
-- Variable importance scores for RF
-- Masked seagrass area estimates (m²)
+- Balanced sample sizes (2,460 pixels)
+- 3-fold CV results for RF and SVM (with grid search)
+- Variable importance scores for RF (11 features)
+- Masked seagrass area estimates (`Export.table.toDrive` batch task; CSV in Drive)
 
 ---
 
@@ -77,19 +77,26 @@ Extracts per-pixel feature values within each training polygon for spectral anal
 exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 ```
 
-Output: CSV with all 13 feature values per pixel, joined with class labels.
+Output: CSV with all 11 feature values per pixel, joined with class labels.
 
 ---
 
-## Expected results
+## Expected results (v8 deterministic)
 
 | Classifier | OA | κ |
 |---|---|---|
-| Random Forest | 0.833 | 0.665 |
-| **SVM** (C\*=1, γ\*=0.1) | **0.859** | **0.717** |
-| GBM | 0.831 | 0.651 |
+| Random Forest | 0.832 | 0.663 |
+| **SVM** (C\*=10, γ\*=0.1) | **0.861** | **0.722** |
 
-**Note on stochastic variation**: Due to `bestEffort=true` in z-score normalization (Section 14b), repeated runs may produce κ variation of approximately ±0.01–0.03. This is normal and does not affect overall conclusions.
+### Per-fold breakdown
+
+| Fold | RF — OA / κ | SVM — OA / κ |
+|---|---|---|
+| Block G (South) | 0.681 / 0.363 | 0.697 / 0.394 |
+| Block O (Middle) | 0.840 / 0.681 | 0.900 / 0.801 |
+| Block K (North) | 0.973 / 0.946 | 0.985 / 0.970 |
+
+**Reproducibility note**: v8 replaced the earlier `bestEffort=true` z-score normalization with a **deterministic coordinate-based hash key** for per-block 1:1 undersampling. Repeated runs now produce **identical** OA/κ values — no stochastic variation.
 
 ---
 
@@ -97,7 +104,8 @@ Output: CSV with all 13 feature values per pixel, joined with class labels.
 
 | Symptom | Likely cause | Solution |
 |---|---|---|
-| `Earth Engine memory capacity exceeded` | Per-image clip() before composite | Already handled in v7 (clip only on final composite) |
-| `Computation timed out` (area calc) | Scale too fine | Already using `scale: 30` and `bestEffort: true` |
+| `Earth Engine memory capacity exceeded` | Per-image clip() before composite | Already handled in v8 (clip only on final composite) |
+| `Computation timed out` (interactive area calc) | Interactive `reduceRegion` exceeds 5-min limit | v8 uses `Export.table.toDrive` batch task for final area values |
 | Tile seam visible in output | Linear matching skipped | Verify Section 4b ran without error |
 | Open-sea false positives | Biophysical mask not applied | Verify GEBCO + JRC datasets accessible (check Section 20b) |
+| Stacked feature export `mixed dataType` error | Heterogeneous band types | v8 uses `.toFloat()` and `bounds()` region + COG profile |

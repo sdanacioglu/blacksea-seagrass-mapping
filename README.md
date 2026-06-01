@@ -4,7 +4,7 @@
 [![Google Earth Engine](https://img.shields.io/badge/GEE-JavaScript-orange.svg)](https://earthengine.google.com/)
 [![Status: pre-publication](https://img.shields.io/badge/status-pre--publication-lightgrey.svg)]()
 
-Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast** (İğneada–Karaburun, Türkiye) using Sentinel-2 multispectral imagery and three machine learning classifiers (Random Forest, Support Vector Machines, Gradient Boosting Machine) on Google Earth Engine.
+Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast** (İğneada–Karaburun, Türkiye) using Sentinel-2 multispectral imagery and two machine learning classifiers (Random Forest, Support Vector Machines) on Google Earth Engine.
 
 ---
 
@@ -12,27 +12,27 @@ Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast
 
 This repository contains the core code base and methodology documentation for the study:
 
-> **Danacıoğlu, Ş.** (2026). *Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama* [Sentinel-2 based seagrass mapping in the Western Black Sea]. *Geomatik Dergisi* (under preparation).
+> **Danacıoğlu, Ş.** (2026). *Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama* [Sentinel-2 based seagrass mapping in the Western Black Sea]. *Turkish Journal of Remote Sensing (TJRS)* (under preparation).
 
 ### Key features
 
 - Sentinel-2 L2A preprocessing with **tile-aware Hedley sunglint correction**
 - **Linear radiometric normalization** between MGRS tiles (Schott 1988; Yang & Lo 2000) for tile-seam removal
-- **13-feature stacked image** (B1–B5, NDAVI, WAVI, MNDWI, TI, SDB, TB1, TB2, NDRE)
-- **Three-classifier comparison**: RF, SVM (RBF with grid search), GBM
+- **11-feature stacked image** (B1–B5, NDAVI, MNDWI, TI, SDB, TB1, TB2)
+- **Two-classifier comparison**: Random Forest (RF) and Support Vector Machines (SVM, RBF with grid search)
 - **3-fold spatial cross-validation** (latitudinal blocks)
 - **Biophysical masking** (GEBCO depth ≤ 15 m + JRC coastal distance ≤ 3 km)
-- **Majority-consensus map product** (≥2 out of 3 classifiers agreement)
+- **RF ∩ SVM intersection map** (high-confidence agreement product)
+- **Deterministic reproducibility**: coordinate-based block undersampling — no `bestEffort` stochasticity
 
-### Performance summary
+### Performance summary (v8 deterministic results)
 
 | Classifier | Overall Accuracy | Cohen's κ |
 |---|---|---|
-| Random Forest (100 trees) | 0.833 | 0.665 |
-| **SVM (RBF, C\*=1, γ\*=0.1)** | **0.859** | **0.717** |
-| GBM (150 trees) | 0.831 | 0.651 |
+| Random Forest (100 trees, √11 ≈ 3) | 0.832 | 0.663 |
+| **SVM (RBF, C\*=10, γ\*=0.1)** | **0.861** | **0.722** |
 
-κ = 0.717 falls within Landis & Koch (1977) **"substantial agreement"** upper range; represents an upper-bound performance for Case-2 (optically complex) coastal waters.
+κ = 0.722 falls within Landis & Koch (1977) **"substantial agreement"** band; represents a strong performance for Case-2 (optically complex) coastal waters.
 
 ---
 
@@ -47,7 +47,7 @@ blacksea-seagrass-mapping/
 │
 ├── code/
 │   ├── gee/
-│   │   └── seagrass_mapping_v7.js     ← Main Google Earth Engine pipeline
+│   │   └── seagrass_mapping_v8.js     ← Main Google Earth Engine pipeline
 │   └── arcgis/
 │       ├── extract_pixels.py          ← Per-pixel feature extraction
 │       └── polygon_triage.py          ← Training-polygon quality control
@@ -69,7 +69,7 @@ blacksea-seagrass-mapping/
 
 ### 1. GEE workflow
 
-Open [`code/gee/seagrass_mapping_v7.js`](code/gee/seagrass_mapping_v7.js) in the [GEE Code Editor](https://code.earthengine.google.com/).
+Open [`code/gee/seagrass_mapping_v8.js`](code/gee/seagrass_mapping_v8.js) in the [GEE Code Editor](https://code.earthengine.google.com/).
 
 Replace the following placeholders with your own GEE project paths:
 
@@ -108,7 +108,7 @@ If you use this code or methodology, please cite:
 @article{Danacioglu2026,
   title={Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama},
   author={Danacıoğlu, Şevki},
-  journal={Geomatik Dergisi},
+  journal={Turkish Journal of Remote Sensing},
   year={2026},
   note={under preparation}
 }
