@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Google Earth Engine](https://img.shields.io/badge/GEE-JavaScript-orange.svg)](https://earthengine.google.com/)
 [![Status: pre-publication](https://img.shields.io/badge/status-pre--publication-lightgrey.svg)]()
+[![Web App](https://img.shields.io/badge/GEE_App-Live_Demo-blue.svg)](https://sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping)
 
 Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast** (İğneada–Karaburun, Türkiye) using Sentinel-2 multispectral imagery and two machine learning classifiers (Random Forest, Support Vector Machines) on Google Earth Engine.
 
@@ -21,11 +22,13 @@ This repository contains the core code base and methodology documentation for th
 - **11-feature stacked image** (B1–B5, NDAVI, MNDWI, TI, SDB, TB1, TB2)
 - **Two-classifier comparison**: Random Forest (RF) and Support Vector Machines (SVM, RBF with grid search)
 - **3-fold spatial cross-validation** (latitudinal blocks)
-- **Biophysical masking** (GEBCO depth ≤ 15 m + JRC coastal distance ≤ 3 km)
+- **Biophysical masking** (JRC coastal distance ≤ 3 km)
 - **RF ∩ SVM intersection map** (high-confidence agreement product)
 - **Deterministic reproducibility**: coordinate-based block undersampling — no `bestEffort` stochasticity
 
-### Performance summary (v8 deterministic results)
+- **Interactive web application** with split-screen comparison, time series, and area calculator
+
+### Performance summary (v9 deterministic results)
 
 | Classifier | Overall Accuracy | Cohen's κ |
 |---|---|---|
@@ -47,7 +50,9 @@ blacksea-seagrass-mapping/
 │
 ├── code/
 │   ├── gee/
-│   │   └── seagrass_mapping_v8.js     ← Main Google Earth Engine pipeline
+│   │   ├── seagrass_mapping_v9.js     ← Main GEE analysis pipeline (current)
+│   │   ├── seagrass_webapp.js         ← Interactive web application
+│   │   └── seagrass_mapping_v8.js     ← Previous version (archived)
 │   └── arcgis/
 │       ├── extract_pixels.py          ← Per-pixel feature extraction
 │       └── polygon_triage.py          ← Training-polygon quality control
@@ -69,7 +74,9 @@ blacksea-seagrass-mapping/
 
 ### 1. GEE workflow
 
-Open [`code/gee/seagrass_mapping_v8.js`](code/gee/seagrass_mapping_v8.js) in the [GEE Code Editor](https://code.earthengine.google.com/).
+Open [`code/gee/seagrass_mapping_v9.js`](code/gee/seagrass_mapping_v9.js) in the [GEE Code Editor](https://code.earthengine.google.com/).
+
+**Live demo:** [sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping](https://sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping)
 
 Replace the following placeholders with your own GEE project paths:
 
@@ -96,7 +103,7 @@ exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 
 - [Methodology](docs/METHODOLOGY.md) — Step-by-step methodological description (TR/EN)
 - [Reproducibility guide](docs/REPRODUCIBILITY.md) — How to reproduce the results
-- [Data sources](docs/DATA_SOURCES.md) — Sentinel-2, GEBCO, JRC, ESA references
+- [Data sources](docs/DATA_SOURCES.md) — Sentinel-2, JRC, ESA references
 
 ---
 
