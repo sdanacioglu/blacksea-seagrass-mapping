@@ -1,6 +1,6 @@
 // =============================================================================
 // SEAGRASS MAPPING — WESTERN BLACK SEA COAST (TÜRKİYE)
-// Interactive Web Application v2
+// Interactive Web Application v3
 // Danacıoğlu, 2025 — İzmir Bakırçay University
 // Assisted by Claude Opus 4.6 (Anthropic)
 // =============================================================================
@@ -35,7 +35,7 @@ var CARD = '#f7fafc';
 var CLR  = {
   title: '#1a1a2e', sub: '#4a5568', body: '#2d3748', muted: '#718096',
   accent: '#0077b6', divider: '#e2e8f0', link: '#0077b6',
-  rf: '#16a34a', svm: '#ea580c', con: '#dc2626'
+  seagrass: '#16a34a'
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,18 +75,39 @@ function legendRow(color, label) {
   return row;
 }
 
-// ── Layer registry ──────────────────────────────────────────────────────────
-var LAYERS = {};
-LAYERS['Random Forest (RF)']           = {img: rf.selfMask(),  vis: {palette: [CLR.rf]}};
-LAYERS['Support Vector Machine (SVM)'] = {img: svm.selfMask(), vis: {palette: [CLR.svm]}};
-LAYERS['Consensus (RF ∩ SVM)']         = {img: con.selfMask(), vis: {palette: [CLR.con]}};
-LAYERS['Sentinel-2 RGB']               = {img: s2rgb,
-  vis: {bands: ['B4', 'B3', 'B2'], min: 0, max: 3000}};
-var LAYER_NAMES = Object.keys(LAYERS);
+// ── Layer definitions ───────────────────────────────────────────────────────
+var LAYERS = {
+  'Random Forest (RF)':           {img: rf.selfMask(),  vis: {palette: [CLR.seagrass]}},
+  'Support Vector Machine (SVM)': {img: svm.selfMask(), vis: {palette: [CLR.seagrass]}},
+  'Consensus (RF ∩ SVM)':         {img: con.selfMask(), vis: {palette: [CLR.seagrass]}},
+  'Sentinel-2 RGB':               {img: s2rgb,
+    vis: {bands: ['B4', 'B3', 'B2'], min: 0, max: 3000}}
+};
 
 var outlineImg = ee.Image().byte().paint({
   featureCollection: studyArea, color: 1, width: 2
 });
+
+// =============================================================================
+//  MAP
+// =============================================================================
+var map = ui.Map();
+map.setOptions('SATELLITE');
+map.setCenter(28.35, 41.65, 10);
+map.centerObject(bounds, 10);
+
+// Study area outline — always visible
+map.addLayer(outlineImg, {palette: ['#0077b6']}, 'Study Area', true, 0.8);
+
+// Classification layers — added hidden, toggled by checkboxes
+var layerIndex = {};
+var idx = 1;
+for (var name in LAYERS) {
+  var d = LAYERS[name];
+  map.addLayer(d.img, d.vis, name, false, 0.8);
+  layerIndex[name] = idx;
+  idx++;
+}
 
 // =============================================================================
 //  PANEL
@@ -121,33 +142,49 @@ panel.add(ui.Label({
 }));
 panel.add(divider());
 
-// ── Split-screen selectors ──────────────────────────────────────────────────
-panel.add(heading('Split-Screen Comparison'));
+// ── Layer checkboxes ────────────────────────────────────────────────────────
+panel.add(heading('Layers'));
 
-panel.add(hint('Left map'));
-var selL = ui.Select({
-  items: LAYER_NAMES, value: LAYER_NAMES[0],
-  style: {stretch: 'horizontal', fontFamily: FONT, margin: '0 0 6px 0'}
-});
-panel.add(selL);
+function makeCheckbox(layerName, defaultOn) {
+  var cb = ui.Checkbox({
+    label: layerName,
+    value: defaultOn,
+    style: {fontFamily: FONT, fontSize: '11px', margin: '2px 0',
+      backgroundColor: BG}
+  });
+  cb.onChange(function(checked) {
+    map.layers().get(layerIndex[layerName]).setShown(checked);
+  });
+  if (defaultOn) {
+    map.layers().get(layerIndex[layerName]).setShown(true);
+  }
+  return cb;
+}
 
-panel.add(hint('Right map'));
-var selR = ui.Select({
-  items: LAYER_NAMES, value: LAYER_NAMES[1],
-  style: {stretch: 'horizontal', fontFamily: FONT, margin: '0 0 8px 0'}
-});
-panel.add(selR);
+var cbRF  = makeCheckbox('Random Forest (RF)', true);
+var cbSVM = makeCheckbox('Support Vector Machine (SVM)', false);
+var cbCon = makeCheckbox('Consensus (RF ∩ SVM)', false);
+var cbRGB = makeCheckbox('Sentinel-2 RGB', false);
+
+panel.add(cbRF);
+panel.add(cbSVM);
+panel.add(cbCon);
+panel.add(cbRGB);
 
 panel.add(hint('Opacity'));
 var opSlider = ui.Slider({
   min: 0, max: 1, value: 0.8, step: 0.05,
-  style: {stretch: 'horizontal', margin: '0 0 8px 0'}
+  style: {stretch: 'horizontal', margin: '4px 0 8px 0'}
+});
+opSlider.onChange(function(v) {
+  for (var n in layerIndex) {
+    map.layers().get(layerIndex[n]).setOpacity(v);
+  }
 });
 panel.add(opSlider);
 
-panel.add(legendRow(CLR.rf,  'RF — Seagrass'));
-panel.add(legendRow(CLR.svm, 'SVM — Seagrass'));
-panel.add(legendRow(CLR.con, 'Consensus — Seagrass'));
+panel.add(legendRow(CLR.seagrass, 'Seagrass'));
+panel.add(legendRow('#0077b6',    'Study Area'));
 panel.add(divider());
 
 // ── Interaction mode ────────────────────────────────────────────────────────
@@ -254,61 +291,6 @@ panel.add(ui.Label({
 }));
 
 // =============================================================================
-//  TWO MAPS — SPLIT SCREEN
-// =============================================================================
-var mapL = ui.Map();
-var mapR = ui.Map();
-mapL.setOptions('SATELLITE');
-mapR.setOptions('SATELLITE');
-
-mapL.addLayer(outlineImg, {palette: ['#0077b6']}, 'Study Area', true, 0.8);
-mapR.addLayer(outlineImg, {palette: ['#0077b6']}, 'Study Area', true, 0.8);
-
-// ── Layer management ────────────────────────────────────────────────────────
-function setLayer(map, name, opacity) {
-  while (map.layers().length() > 1) {
-    map.layers().remove(map.layers().get(map.layers().length() - 1));
-  }
-  var d = LAYERS[name];
-  map.layers().add(ui.Map.Layer(d.img, d.vis, name, true, opacity));
-}
-
-setLayer(mapL, LAYER_NAMES[0], 0.8);
-setLayer(mapR, LAYER_NAMES[1], 0.8);
-
-// Map labels (floating)
-var lblL = ui.Label({value: '◀ ' + LAYER_NAMES[0], style: {
-  position: 'bottom-left', fontFamily: FONT, fontSize: '11px',
-  fontWeight: 'bold', color: '#fff',
-  backgroundColor: 'rgba(0,0,0,0.55)', padding: '3px 8px'
-}});
-var lblR = ui.Label({value: LAYER_NAMES[1] + ' ▶', style: {
-  position: 'bottom-right', fontFamily: FONT, fontSize: '11px',
-  fontWeight: 'bold', color: '#fff',
-  backgroundColor: 'rgba(0,0,0,0.55)', padding: '3px 8px'
-}});
-mapL.add(lblL);
-mapR.add(lblR);
-
-// Dropdown handlers
-selL.onChange(function(v) {
-  setLayer(mapL, v, opSlider.getValue());
-  lblL.setValue('◀ ' + v);
-});
-selR.onChange(function(v) {
-  setLayer(mapR, v, opSlider.getValue());
-  lblR.setValue(v + ' ▶');
-});
-opSlider.onChange(function(v) {
-  if (mapL.layers().length() > 1) mapL.layers().get(1).setOpacity(v);
-  if (mapR.layers().length() > 1) mapR.layers().get(1).setOpacity(v);
-});
-
-// Link & center
-ui.Map.Linker([mapL, mapR]);
-mapL.centerObject(bounds, 10);
-
-// =============================================================================
 //  MODE SWITCHING
 // =============================================================================
 function updateMode(mode) {
@@ -317,7 +299,7 @@ function updateMode(mode) {
   areaBox.style().set('shown',   mode === 'Area Calculator');
   drawBtns.style().set('shown',  mode === 'Area Calculator');
 
-  var tools = mapL.drawingTools();
+  var tools = map.drawingTools();
   tools.setShown(mode === 'Area Calculator');
   if (mode !== 'Area Calculator') tools.stop();
 }
@@ -338,9 +320,9 @@ function doInspect(coords) {
   }));
 
   var lyrs = [
-    {img: rf,  n: 'RF',        c: CLR.rf},
-    {img: svm, n: 'SVM',       c: CLR.svm},
-    {img: con, n: 'Consensus', c: CLR.con}
+    {img: rf,  n: 'RF',        c: CLR.seagrass},
+    {img: svm, n: 'SVM',       c: CLR.seagrass},
+    {img: con, n: 'Consensus', c: CLR.seagrass}
   ];
 
   lyrs.forEach(function(lyr) {
@@ -390,8 +372,8 @@ function doTimeSeries(coords) {
     lineWidth: 2,
     pointSize: 4,
     series: {
-      0: {color: CLR.rf,     labelInLegend: 'NDAVI'},
-      1: {color: CLR.accent, labelInLegend: 'MNDWI'}
+      0: {color: CLR.seagrass, labelInLegend: 'NDAVI'},
+      1: {color: CLR.accent,   labelInLegend: 'MNDWI'}
     },
     interpolateNulls: true,
     legend: {position: 'bottom',
@@ -410,13 +392,12 @@ function handleClick(coords) {
   if (mode === 'Point Inspector') doInspect(coords);
   else if (mode === 'Time Series') doTimeSeries(coords);
 }
-mapL.onClick(handleClick);
-mapR.onClick(handleClick);
+map.onClick(handleClick);
 
 // =============================================================================
 //  AREA CALCULATOR — DRAWING TOOLS
 // =============================================================================
-var dt = mapL.drawingTools();
+var dt = map.drawingTools();
 dt.setShown(false);
 dt.layers().reset();
 dt.layers().add(ui.Map.GeometryLayer({
@@ -473,7 +454,7 @@ function calcArea() {
     areaBox.clear();
     if (err) {
       areaBox.add(ui.Label({value: 'Error — try a smaller area.',
-        style: {fontSize: '11px', fontFamily: FONT, color: CLR.con,
+        style: {fontSize: '11px', fontFamily: FONT, color: '#dc2626',
           backgroundColor: CARD}}));
       return;
     }
@@ -502,9 +483,9 @@ function calcArea() {
       return rp;
     }
 
-    areaBox.add(areaRow(CLR.rf,  'RF',        vals[1]));
-    areaBox.add(areaRow(CLR.svm, 'SVM',       vals[2]));
-    areaBox.add(areaRow(CLR.con, 'Consensus', vals[3]));
+    areaBox.add(areaRow(CLR.seagrass, 'RF',        vals[1]));
+    areaBox.add(areaRow(CLR.seagrass, 'SVM',       vals[2]));
+    areaBox.add(areaRow(CLR.seagrass, 'Consensus', vals[3]));
   });
 }
 
@@ -514,17 +495,7 @@ dt.onEdit(ui.util.debounce(calcArea, 500));
 // =============================================================================
 //  LAYOUT
 // =============================================================================
-// SplitPanel cannot be nested — use flow layout for outer shell
-var mapSplit = ui.SplitPanel({
-  firstPanel:  mapL,
-  secondPanel: mapR,
-  orientation: 'horizontal'
-});
-
-var mapWrapper = ui.Panel({style: {stretch: 'both'}});
-mapWrapper.add(mapSplit);
-
 ui.root.clear();
 ui.root.setLayout(ui.Panel.Layout.flow('horizontal'));
 ui.root.add(panel);
-ui.root.add(mapWrapper);
+ui.root.add(map);

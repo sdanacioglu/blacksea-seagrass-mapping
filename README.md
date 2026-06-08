@@ -25,8 +25,7 @@ This repository contains the core code base and methodology documentation for th
 - **Biophysical masking** (JRC coastal distance ≤ 3 km)
 - **RF ∩ SVM intersection map** (high-confidence agreement product)
 - **Deterministic reproducibility**: coordinate-based block undersampling — no `bestEffort` stochasticity
-
-- **Interactive web application** with split-screen comparison, time series, and area calculator
+- **Interactive web application** with layer toggles, point inspector, time series, and area calculator
 
 ### Performance summary (v9 deterministic results)
 
@@ -51,7 +50,7 @@ blacksea-seagrass-mapping/
 ├── code/
 │   ├── gee/
 │   │   ├── seagrass_mapping_v9.js     ← Main GEE analysis pipeline (current)
-│   │   ├── seagrass_webapp.js         ← Interactive web application
+│   │   ├── seagrass_webapp.js         ← Interactive web application (v3)
 │   │   └── seagrass_mapping_v8.js     ← Previous version (archived)
 │   └── arcgis/
 │       ├── extract_pixels.py          ← Per-pixel feature extraction
@@ -109,19 +108,7 @@ exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 
 ## Citation
 
-If you use this code or methodology, please cite:
-
-```bibtex
-@article{Danacioglu2026,
-  title={Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama},
-  author={Danacıoğlu, Şevki},
-  journal={Turkish Journal of Remote Sensing},
-  year={2026},
-  note={under preparation}
-}
-```
-
-GitHub also provides a **"Cite this repository"** button (powered by `CITATION.cff`).
+<!-- Citation will be added upon publication. -->
 
 ---
 
