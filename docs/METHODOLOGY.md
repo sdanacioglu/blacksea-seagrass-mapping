@@ -84,4 +84,90 @@ Two classifiers compared with the same training set:
 
 ---
 
-For full code see [`code/gee/seagrass_mapping_v8.js`](../code/gee/seagrass_mapping_v8.js).
+# Metodoloji — Karadeniz Deniz Çayırı Haritalama
+
+İşlem hattının adım adım açıklaması.
+
+---
+
+## 1. Çalışma alanı
+
+- **Coğrafi kapsam**: Batı Karadeniz, İğneada (41,996°K) ile Karaburun (41,342°K) arasında
+- **Boylamsal kapsam**: 27,977°–28,785°D
+- **Toplam alan**: ~1.133,51 km² (kıyı uzunluğu ~130 km)
+- **Paftalar**: Sentinel-2 MGRS T35TLG (batı) + T35TMG (doğu)
+- **Su sınıfı**: Durum-2 (optik olarak karmaşık, orta-yüksek bulanıklık)
+
+## 2. Veri kaynakları
+
+| Kaynak | Kullanım | Çözünürlük |
+|---|---|---|
+| Sentinel-2 L2A SR_HARMONIZED | Yüzey yansıtımı | 10 m |
+| GEBCO 2023 (topluluk varlığı) | Batimetri maskesi | ~450 m |
+| JRC Küresel Yüzey Suyu | Kara/su maskesi | ~30 m |
+| Kullanıcı tarafından çizilen eğitim poligonları | Deniz çayırı/Kum/Derin su | Vektör |
+
+## 3. Ön işleme hattı — altı ardışık adım
+
+1. **Bulut maskeleme** — QA60 bit 10/11
+2. **Hedley güneş parıltısı düzeltmesi** — görüntü ve pafta bazında referans geometrisi
+3. **Pafta ayrımı** — ~28,30°D boylamında bölme; pafta bazında Hedley + doğrusal radyometrik eşleştirme (Schott 1988 / Yang ve Lo 2000 ortalama-standart sapma)
+4. **%25 persentil mevsimsel bileşik** — 1 Temmuz – 15 Eylül 2025, bulut < %20
+5. **Bulanıklık maskesi** — TI = ρ_KIRMIZI/ρ_YEŞİL < 1,5 (Lacaux vd., 2006)
+6. **Su maskesi** — MNDWI > 0 (Xu, 2006)
+
+## 4. Öznitelik yığını — 11 öznitelik
+
+| Kategori | Öznitelikler |
+|---|---|
+| Spektral bantlar | B1, B2, B3, B4, B5 |
+| Su bitki örtüsü indeksi | NDAVI |
+| Su / maskeleme | MNDWI, TI |
+| Batimetri | SDB (Stumpf 2003 log-oran) |
+| Boyut indirgeme | TB1, TB2 (TBA bileşenleri) |
+
+**Çıkarılan öznitelikler** (yinelemeli test sonrası):
+- **DII** — literatür incelemesi sonrası çıkarılmıştır (Kuhwald 2021; Mederos-Barrera 2022: bulanık Durum-2 sularında performansı artırmadığı belirlenmiştir)
+- **WAVI** — NDAVI ile korelasyon r ≈ 1,00; gereksiz
+- **NDRE** — en düşük değişken önem katkısı; B5 spektral olarak zaten mevcut; kırmızı kenar su kolonuna zayıf nüfuz etmektedir
+
+## 5. Eğitim verisi
+
+- **174 poligon** (ArcGIS Pro'da görsel yorumlama ile oluşturulmuştur)
+  - 71 Deniz çayırı
+  - 51 Kum
+  - 52 Derin su
+- **5 m negatif tampon** (Schütt 2025 karışık piksel filtresi)
+- Mekânsal çapraz doğrulama için **3 enlemsel blok**:
+  - **Blok K** (Kuzey, 41,778°–41,996°K): Beğendik, İğneada
+  - **Blok O** (Orta, 41,560°–41,778°K): Kıyıköy
+  - **Blok G** (Güney, 41,342°–41,560°K): Yalıköy, Karaburun
+- **Z-skoru normalizasyonu** + **deterministik blok bazlı 1:1 alt örnekleme** (koordinat tabanlı anahtar — stokastik `bestEffort` bağımlılığı bulunmamaktadır) → 2.460 dengeli eğitim pikseli
+
+## 6. Sınıflandırma
+
+Aynı eğitim seti ile iki sınıflandırıcı karşılaştırılmıştır:
+
+| Sınıflandırıcı | Parametreler |
+|---|---|
+| Rastgele Orman (RO) | 100 ağaç, √11 ≈ 3 değişken/bölünme, seed=42 |
+| DVM (RBF) | Izgara araması 5×5 = 25 kombinasyon: C ∈ {0,1; 1; 10; 100; 1000}, γ ∈ {0,0001; 0,001; 0,01; 0,1; 1}; **en iyi: C\*=10, γ\*=0,1** |
+
+## 7. Doğruluk değerlendirmesi
+
+- **3 katlı mekânsal çapraz doğrulama** (doğrulama bloğu rotasyonu: G/O/K)
+- **Metrikler**: Genel Doğruluk (GD), Cohen's Kappa (κ), Üretici Doğruluğu (ÜD) / Kullanıcı Doğruluğu (KD)
+- **Değişken Önem Ölçüsü** (RO, Gini azalması)
+- κ için **Landis ve Koch (1977) yorumlama bantları**
+
+## 8. Sınıflandırma sonrası
+
+1. **Minimum haritalama birimi filtresi** — 4 piksel (≥ 400 m²) bağlantılı piksel filtresi
+2. **Biyofiziksel maske**:
+   - GEBCO derinlik ≤ 15 m (Traganos ve Reinartz, 2018)
+   - JRC tabanlı kıyı mesafesi ≤ 3 km (Roelfsema vd., 2014)
+3. **RO ∩ DVM kesişim haritası** — yüksek güvenilirlikli ürün: her iki sınıflandırıcı tarafından da deniz çayırı olarak sınıflandırılan pikseller; birincil tematik harita = DVM
+
+---
+
+For full code see [`code/gee/seagrass_mapping_v9.js`](../code/gee/seagrass_mapping_v9.js).

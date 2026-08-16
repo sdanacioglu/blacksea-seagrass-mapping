@@ -1,21 +1,12 @@
 // =============================================================================
 // SEAGRASS HABITAT MAPPING — WESTERN BLACK SEA COAST (TÜRKİYE)
 // İğneada–Karaburun, ~130 km | Sentinel-2 L2A | RF & SVM binary classification
-// v9.0 — ETOPO1 depth mask removed; coastal-distance-only biophysical mask
-// =============================================================================
+//
 // Author  : Ş. Danacıoğlu — İzmir Bakırçay University, Geography Dept.
 // Contact : sdanacioglu@gmail.com
 // AI Asst.: Claude Opus 4.6 (Anthropic) — code review, refactoring, comments
 // GitHub  : github.com/sdanacioglu/blacksea-seagrass-mapping
 // Web App : sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping
-// =============================================================================
-// v8 → v9 changes:
-//   (1) ETOPO1/GEBCO depth mask removed — biophysical mask now uses coastal
-//       distance only (JRC 3 km buffer). Rationale: SDB provides indirect
-//       depth constraint; Secchi depth 2–5 m already limits optical penetration
-//       in Case-2 Black Sea waters (Canuti, 2025; Grégoire vd., 2023).
-//   (2) Comments cleaned up for publication readiness.
-//   (3) Asset paths migrated to projects/sdanacioglu/.
 // =============================================================================
 
 // =============================================================================

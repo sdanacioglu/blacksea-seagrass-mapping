@@ -37,7 +37,7 @@ Upload the following to your GEE Cloud Project as assets:
 
 ## Step 2 — Configure and run the GEE pipeline
 
-1. Open [`code/gee/seagrass_mapping_v8.js`](../code/gee/seagrass_mapping_v8.js) in the [GEE Code Editor](https://code.earthengine.google.com/)
+1. Open [`code/gee/seagrass_mapping_v9.js`](../code/gee/seagrass_mapping_v9.js) in the [GEE Code Editor](https://code.earthengine.google.com/)
 2. Replace placeholder asset paths with your own
 3. (Optional) Adjust date range, cloud threshold, or tile split longitude in Section 4 if your study area differs
 4. Click **Run** — pipeline outputs will appear in the console (~3–10 min)
@@ -81,7 +81,7 @@ Output: CSV with all 11 feature values per pixel, joined with class labels.
 
 ---
 
-## Expected results (v8 deterministic)
+## Expected results
 
 | Classifier | OA | κ |
 |---|---|---|
@@ -96,7 +96,7 @@ Output: CSV with all 11 feature values per pixel, joined with class labels.
 | Block O (Middle) | 0.840 / 0.681 | 0.900 / 0.801 |
 | Block K (North) | 0.973 / 0.946 | 0.985 / 0.970 |
 
-**Reproducibility note**: v8 replaced the earlier `bestEffort=true` z-score normalization with a **deterministic coordinate-based hash key** for per-block 1:1 undersampling. Repeated runs now produce **identical** OA/κ values — no stochastic variation.
+**Reproducibility note**: The pipeline uses a **deterministic coordinate-based hash key** for per-block 1:1 undersampling. Repeated runs produce **identical** OA/κ values — no stochastic variation.
 
 ---
 
@@ -104,8 +104,8 @@ Output: CSV with all 11 feature values per pixel, joined with class labels.
 
 | Symptom | Likely cause | Solution |
 |---|---|---|
-| `Earth Engine memory capacity exceeded` | Per-image clip() before composite | Already handled in v8 (clip only on final composite) |
-| `Computation timed out` (interactive area calc) | Interactive `reduceRegion` exceeds 5-min limit | v8 uses `Export.table.toDrive` batch task for final area values |
+| `Earth Engine memory capacity exceeded` | Per-image clip() before composite | Clip only on final composite, not per-image |
+| `Computation timed out` (interactive area calc) | Interactive `reduceRegion` exceeds 5-min limit | Pipeline uses `Export.table.toDrive` batch task for final area values |
 | Tile seam visible in output | Linear matching skipped | Verify Section 4b ran without error |
 | Open-sea false positives | Biophysical mask not applied | Verify GEBCO + JRC datasets accessible (check Section 20b) |
-| Stacked feature export `mixed dataType` error | Heterogeneous band types | v8 uses `.toFloat()` and `bounds()` region + COG profile |
+| Stacked feature export `mixed dataType` error | Heterogeneous band types | Pipeline uses `.toFloat()` and `bounds()` region + COG profile |

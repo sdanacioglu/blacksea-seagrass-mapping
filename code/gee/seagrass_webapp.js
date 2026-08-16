@@ -1,7 +1,6 @@
 // =============================================================================
 // SEAGRASS MAPPING — WESTERN BLACK SEA COAST (TÜRKİYE)
-// Interactive Web Application v3
-// Danacıoğlu, 2025 — İzmir Bakırçay University
+// Danacıoğlu, 2026 — İzmir Bakırçay University
 // Assisted by Claude Opus 4.6 (Anthropic)
 // =============================================================================
 

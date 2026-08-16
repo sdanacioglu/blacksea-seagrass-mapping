@@ -13,7 +13,7 @@ Reproducible seagrass habitat mapping pipeline for the **Western Black Sea coast
 
 This repository contains the core code base and methodology documentation for the study:
 
-> **Danacıoğlu, Ş.** (2026). *Batı Karadeniz (İğneada–Karaburun) Kıyılarında Sentinel-2 ile Deniz Çayırı Haritalama* [Sentinel-2 based seagrass mapping in the Western Black Sea]. *Turkish Journal of Remote Sensing (TJRS)* (under preparation).
+> **Seagrass Mapping Along the Western Black Sea Coast of Türkiye Using Sentinel-2 and Google Earth Engine: A Comparison of Random Forest and Support Vector Machines Algorithms**
 
 ### Key features
 
@@ -27,7 +27,7 @@ This repository contains the core code base and methodology documentation for th
 - **Deterministic reproducibility**: coordinate-based block undersampling — no `bestEffort` stochasticity
 - **Interactive web application** with layer toggles, point inspector, time series, and area calculator
 
-### Performance summary (v9 deterministic results)
+### Performance summary
 
 | Classifier | Overall Accuracy | Cohen's κ |
 |---|---|---|
@@ -49,9 +49,8 @@ blacksea-seagrass-mapping/
 │
 ├── code/
 │   ├── gee/
-│   │   ├── seagrass_mapping_v9.js     ← Main GEE analysis pipeline (current)
-│   │   ├── seagrass_webapp.js         ← Interactive web application (v3)
-│   │   └── seagrass_mapping_v8.js     ← Previous version (archived)
+│   │   ├── seagrass_mapping_v9.js     ← Main GEE analysis pipeline
+│   │   └── seagrass_webapp.js         ← Interactive web application
 │   └── arcgis/
 │       ├── extract_pixels.py          ← Per-pixel feature extraction
 │       └── polygon_triage.py          ← Training-polygon quality control
