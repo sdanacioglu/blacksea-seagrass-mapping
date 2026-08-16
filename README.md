@@ -58,7 +58,8 @@ blacksea-seagrass-mapping/
 └── docs/
     ├── METHODOLOGY.md     ← Step-by-step methodological description
     ├── REPRODUCIBILITY.md ← How to reproduce the published results
-    └── DATA_SOURCES.md    ← Sentinel-2, GEBCO, JRC references
+    ├── DATA_SOURCES.md    ← Sentinel-2, GEBCO, JRC references
+    └── REFERENCES.md      ← Complete reference list (APA 7)
 ```
 
 ---
@@ -102,6 +103,7 @@ exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 - [Methodology](docs/METHODOLOGY.md) — Step-by-step methodological description (TR/EN)
 - [Reproducibility guide](docs/REPRODUCIBILITY.md) — How to reproduce the results
 - [Data sources](docs/DATA_SOURCES.md) — Sentinel-2, JRC, ESA references
+- [References](docs/REFERENCES.md) — Complete reference list (APA 7th Edition)
 
 ---
 
