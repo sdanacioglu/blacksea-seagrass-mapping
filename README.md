@@ -17,14 +17,15 @@ This repository contains the core code base and methodology documentation for th
 
 ### Key features
 
-- Sentinel-2 L2A preprocessing with **tile-aware Hedley sunglint correction**
+- Sentinel-2 L2A pre-processing with **tile-aware Hedley sun glint correction**
 - **Linear radiometric normalization** between MGRS tiles (Schott 1988; Yang & Lo 2000) for tile-seam removal
 - **11-feature stacked image** (B1–B5, NDAVI, MNDWI, TI, SDB, TB1, TB2)
 - **Two-classifier comparison**: Random Forest (RF) and Support Vector Machines (SVM, RBF with grid search)
 - **3-fold spatial cross-validation** (latitudinal blocks)
-- **Biophysical masking** (JRC coastal distance ≤ 3 km)
-- **RF ∩ SVM intersection map** (high-confidence agreement product)
-- **Deterministic reproducibility**: coordinate-based block undersampling — no `bestEffort` stochasticity
+- **Biophysical masking** (JRC-based coastal distance, effective ≈ 1 km)
+- **RF ∩ SVM agreement map** (agreement between the two models, not verified accuracy)
+- **Reproducible sampling**: coordinate-based per-block undersampling — no `bestEffort` stochasticity
+- **Training polygons included** ([`data/training_polygons.geojson`](data/training_polygons.geojson)) with class and cross-validation block labels
 - **Interactive web application** with layer toggles, point inspector, time series, and area calculator
 
 ### Performance summary
@@ -34,7 +35,15 @@ This repository contains the core code base and methodology documentation for th
 | Random Forest (100 trees, √11 ≈ 3) | 0.832 | 0.663 |
 | **SVM (RBF, C\*=10, γ\*=0.1)** | **0.861** | **0.722** |
 
-κ = 0.722 falls within Landis & Koch (1977) **"substantial agreement"** band; represents a strong performance for Case-2 (optically complex) coastal waters.
+Mean values of 3-fold spatial cross-validation on latitudinal blocks. RF was also evaluated over 20 parameter combinations (50–500 trees × 2–6 variables per split): mean OA 0.820–0.832, κ 0.639–0.664.
+
+| Product (after MMU filter and coastal mask) | Area |
+|---|---|
+| SVM | 3,634 ha |
+| RF | 3,509 ha |
+| RF ∩ SVM (agreement) | 2,991 ha |
+
+**Important limitation**: training and validation data come from visual interpretation of high-resolution imagery; no field validation was carried out. The mapped areas should be regarded as **potential seagrass habitat and an upper-bound estimate**.
 
 ---
 
@@ -55,10 +64,13 @@ blacksea-seagrass-mapping/
 │       ├── extract_pixels.py          ← Per-pixel feature extraction
 │       └── polygon_triage.py          ← Training-polygon quality control
 │
+├── data/
+│   └── training_polygons.geojson      ← 174 training polygons with class and CV-block labels
+│
 └── docs/
     ├── METHODOLOGY.md     ← Step-by-step methodological description
     ├── REPRODUCIBILITY.md ← How to reproduce the published results
-    ├── DATA_SOURCES.md    ← Sentinel-2, GEBCO, JRC references
+    ├── DATA_SOURCES.md    ← Sentinel-2, JRC, training data
     └── REFERENCES.md      ← Complete reference list (APA 7)
 ```
 
@@ -77,14 +89,13 @@ Open [`code/gee/seagrass_mapping_v9.js`](code/gee/seagrass_mapping_v9.js) in the
 
 **Live demo:** [sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping](https://sdanacioglu.projects.earthengine.app/view/blacksea-seagrass-mapping)
 
-Replace the following placeholders with your own GEE project paths:
+The script points to the author's GEE assets. To run it yourself, upload the study area and the training polygons ([`data/training_polygons.geojson`](data/training_polygons.geojson)) as assets and replace these variables with your own paths:
 
 ```js
-var STUDY_AREA_ASSET = 'projects/YOUR_GEE_PROJECT/assets/STUDY_AREA_ASSET';
-var TRAINING_ASSET   = 'projects/YOUR_GEE_PROJECT/assets/TRAINING_POLYGONS_ASSET';
-var OUTPUT_ASSET_PATH= 'projects/YOUR_GEE_PROJECT/assets/OUTPUT_FOLDER';
-// Drive folder for exports:
-folder: 'YOUR_DRIVE_FOLDER'
+var STUDY_AREA_ASSET = '...';   // Section 1
+var TRAINING_ASSET   = '...';   // Section 12
+var OUTPUT_ASSET_PATH = '...';  // export section
+// Drive folder for exports: folder: '...'
 ```
 
 Then click **Run**.
@@ -102,7 +113,7 @@ exec(open(r"path/to/code/arcgis/extract_pixels.py").read())
 
 - [Methodology](docs/METHODOLOGY.md) — Step-by-step methodological description (TR/EN)
 - [Reproducibility guide](docs/REPRODUCIBILITY.md) — How to reproduce the results
-- [Data sources](docs/DATA_SOURCES.md) — Sentinel-2, JRC, ESA references
+- [Data sources](docs/DATA_SOURCES.md) — Sentinel-2, JRC, training data
 - [References](docs/REFERENCES.md) — Complete reference list (APA 7th Edition)
 
 ---

@@ -16,26 +16,13 @@ All datasets used in this study are publicly available via Google Earth Engine o
 
 ---
 
-## Bathymetry
-
-### GEBCO 2023 (community asset)
-- **GEE community asset**: GEBCO 2023 grid via Sat-IO community datasets ([awesome-gee-community-datasets](https://samapriya.github.io/awesome-gee-community-datasets/))
-- **Provider**: General Bathymetric Chart of the Oceans (GEBCO)
-- **Resolution**: ~450 m (15 arc-seconds)
-- **Use**: Coastal depth mask (≤ 15 m) for biophysical filtering
-- **Reference**: GEBCO Compilation Group (2023)
-
-*Alternative*: NOAA ETOPO1 (`NOAA/NGDC/ETOPO1`) at ~1.8 km resolution may be used if GEBCO community asset is unavailable, but GEBCO is preferred for coastal applications.
-
----
-
 ## Land/water reference
 
 ### JRC Global Surface Water
 - **GEE asset**: `JRC/GSW1_4/GlobalSurfaceWater`
 - **Provider**: European Commission, Joint Research Centre
 - **Resolution**: ~30 m
-- **Use**: Permanent water extraction → land mask → coastal distance (≤ 3 km)
+- **Use**: Permanent water extraction → land mask → coastal-distance mask (effective distance ≈ 1 km)
 - **Reference**: Pekel et al. (2016), *Nature*, 540(7633)
 - **License**: CC-BY 4.0
 
@@ -43,12 +30,13 @@ All datasets used in this study are publicly available via Google Earth Engine o
 
 ## Training data
 
-### User-drawn polygons (not included in repository)
+### User-drawn polygons ([`data/training_polygons.geojson`](../data/training_polygons.geojson))
 - **174 polygons** (71 seagrass + 51 sand + 52 deep water)
-- **Source**: Visual interpretation in ArcGIS Pro using high-resolution basemaps + Sentinel-2 RGB/false-color composites + NDAVI imagery
+- **Format**: GeoJSON, WGS 84 (EPSG:4326). Attributes: `class` (1 = seagrass, 0 = non-seagrass), `class_name`, `class_sub` (seagrass / sand / deep_water), `block` (N / C / S, as used in the paper) and `block_code` (K / O / G, as used in the GEE script)
+- **Spatial cross-validation blocks**: polygons are assigned by centroid latitude; block boundaries lie at 41.56055°N (S/C) and 41.77995°N (C/N). Polygons per block: N 59 (21 seagrass), C 51 (22 seagrass), S 64 (28 seagrass)
+- **Source**: Visual interpretation in ArcGIS Pro (no field data) using the Esri World Imagery basemap (Vantor Vivid mosaics of WorldView-2/3 imagery, 0.3–0.5 m), Sentinel-2 composite band combinations, NDAVI (visual aid only, no threshold) and the field-verified *Zostera* polygons of the adjacent Bulgarian coast (Berov et al., 2022; https://doi.org/10.17882/79590) as an interpretation key
 - **Quality control**: 5 m negative buffer + multi-iteration triage (band-value verification + spectral profile inspection)
-- **License (when published)**: CC-BY 4.0
-- **Sharing**: Training polygons will be released as a Zenodo dataset upon journal publication
+- **License**: CC-BY 4.0
 
 ---
 
@@ -71,5 +59,4 @@ All datasets used in this study are publicly available via Google Earth Engine o
 When using this code in a publication, please cite the relevant data providers:
 
 - ESA Sentinel-2 mission
-- GEBCO Compilation Group (2023)
 - JRC Global Surface Water (Pekel et al., 2016)

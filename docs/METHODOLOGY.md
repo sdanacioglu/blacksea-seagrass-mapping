@@ -1,34 +1,35 @@
 # Methodology — Black Sea Seagrass Mapping
 
-Step-by-step description of the processing pipeline (TR/EN summary).
+Step-by-step description of the processing pipeline (EN/TR summary). Section numbers refer to the manuscript.
 
 ---
 
-## 1. Study area
+## 1. Study area (Section 2.1)
 
-- **Geographic extent**: Western Black Sea, between İğneada (41.996°N) and Karaburun (41.342°N)
+- **Geographic extent**: Western Black Sea coast of Türkiye, between Beğendik/İğneada (41.996°N) and Karaburun (41.342°N)
 - **Longitudinal extent**: 27.977°–28.785°E
-- **Total area**: ~1,133.51 km² (coastal length ~130 km)
-- **Tiles**: Sentinel-2 MGRS T35TLG (west) + T35TMG (east)
-- **Water class**: Case-2 (optically complex, moderate-to-high turbidity)
+- **Total area**: ~1,133.51 km² (coastline length ~130 km)
+- **Tiles**: four Sentinel-2 MGRS tiles — T35TNF/T35TNG (west, 62 images) and T35TPF/T35TPG (east, 93 images)
+- **Water class**: Case-2 (optically complex), Case-3 in river plume zones
 
-## 2. Data sources
+## 2. Data sources (Section 2.2)
 
 | Source | Use | Resolution |
 |---|---|---|
-| Sentinel-2 L2A SR_HARMONIZED | Surface reflectance | 10 m |
-| GEBCO 2023 (community asset) | Bathymetry mask | ~450 m |
-| JRC Global Surface Water | Land/water mask | ~30 m |
-| User-drawn training polygons | Seagrass/Sand/Deepwater | Vector |
+| Sentinel-2 L2A SR_HARMONIZED | Surface reflectance | 10 m analysis grid (B1 60 m and B5/B11 20 m resampled by GEE default nearest neighbour) |
+| JRC Global Surface Water | Land mask for the coastal-distance mask | ~30 m |
+| User-drawn training polygons | Seagrass / sand / deep water | Vector ([`data/training_polygons.geojson`](../data/training_polygons.geojson)) |
 
-## 3. Preprocessing pipeline (Section 2.3.1) — five sequential steps
+No bathymetric dataset is used: the ETOPO1/GEBCO depth mask of earlier versions was removed in v9.
 
-1. **Cloud masking** — QA60 bits 10/11
-2. **Hedley sunglint correction** — per-image, per-tile reference geometry
-3. **Tile isolation** — Longitude-based split at ~28.30°E; per-tile Hedley + linear radiometric matching (Schott 1988 / Yang & Lo 2000 mean-std)
-4. **25th percentile seasonal composite** — 1 Jul – 15 Sep 2025, cloud < 20%
-5. **Turbidity mask** — TI = ρ_RED/ρ_GREEN < 1.5 (Lacaux et al. 2006)
-6. **Water mask** — MNDWI > 0 (Xu 2006)
+## 3. Pre-processing (Section 2.3.1) — six sequential steps
+
+1. **Cloud masking** — scene-level pre-filter (cloud cover < 20%), then pixel-level QA60 bits 10/11
+2. **Sun glint correction** (Hedley et al., 2005) — per image and per tile half; deep water pixels = MNDWI > 0.5; NIR reference = 5th percentile; images with fewer than 100 deep water pixels are left uncorrected
+3. **25th percentile seasonal composite** — 1 Jul – 15 Sep 2025
+4. **Linear radiometric normalisation** — western composite matched to the eastern composite (mean / standard deviation in the overlap zone; Schott et al., 1988; Yang & Lo, 2000)
+5. **Turbidity mask** — TI = ρ_RED / ρ_GREEN < 1.5 (Lacaux et al., 2006)
+6. **Water mask** — MNDWI > 0 (Xu, 2006)
 
 ## 4. Feature stack — 11 features (Section 2.3.2)
 
@@ -36,84 +37,89 @@ Step-by-step description of the processing pipeline (TR/EN summary).
 |---|---|
 | Spectral bands | B1, B2, B3, B4, B5 |
 | Aquatic vegetation index | NDAVI |
-| Water / masking | MNDWI, TI |
-| Bathymetry | SDB (Stumpf 2003 log-ratio) |
-| Dimensionality reduction | TB1, TB2 (PCA components) |
+| Water / masking | MNDWI |
+| Water quality | TI |
+| Bathymetry | SDB (Stumpf et al., 2003 log-ratio, uncalibrated) |
+| Dimensionality reduction | TB1, TB2 (principal components over B1–B5) |
 
-**Excluded features** (after iterative testing):
-- **DII** — excluded after literature review (Kuhwald 2021; Mederos-Barrera 2022 showed it does not improve performance in turbid Case-2 waters)
-- **WAVI** — correlation r ≈ 1.00 with NDAVI; redundant
-- **NDRE** — lowest VIM contribution; B5 already captured spectrally; red-edge weakly penetrates the water column
+**Excluded**: the Depth Invariant Index (DII), which does not improve classification in turbid Case-2 waters (Kuhwald et al., 2021; Mederos-Barrera et al., 2022).
 
 ## 5. Training data (Section 2.3.3)
 
-- **174 polygons** (visually interpreted in ArcGIS Pro)
-  - 71 Seagrass
-  - 51 Sand
-  - 52 Deep water
-- **5 m negative buffer** (Schütt 2025 mixed-pixel filter)
-- **3 latitudinal blocks** for spatial CV:
-  - **Block K** (North, 41.778°–41.996°): Beğendik, İğneada
-  - **Block O** (Middle, 41.560°–41.778°): Kıyıköy
-  - **Block G** (South, 41.342°–41.560°): Yalıköy, Karaburun
-- **Z-score normalization** + **deterministic per-block 1:1 undersampling** (coordinate-based hash key — no stochastic `bestEffort` dependency) → 2,460 balanced training pixels
+- **174 polygons** from visual interpretation (no field data): 71 seagrass, 51 sand, 52 deep water
+- **Interpretation sources**: Esri World Imagery basemap (Vantor Vivid, WorldView-2/3, 0.3–0.5 m), Sentinel-2 composite band combinations, NDAVI (visual aid only, no threshold) and the field-verified *Zostera* polygons of the adjacent Bulgarian coast (Berov et al., 2022) as an interpretation key
+- **5 m negative buffer** on polygons (mixed-pixel filter; implementation detail of the script)
+- **Three latitudinal blocks** for spatial cross-validation (polygons assigned by centroid latitude; script codes in brackets):
+  - **Block N** [K] (north of 41.780°N): Beğendik, İğneada
+  - **Block C** [O] (41.561°–41.780°N): Kıyıköy
+  - **Block S** [G] (south of 41.561°N): Yalıköy, Karaburun
+- **Z-score normalisation** and **per-block 1:1 undersampling** with a coordinate-based key → **2,460 balanced pixels** (1,230 seagrass + 1,230 non-seagrass; N 203 + 203, C 608 + 608, S 419 + 419)
+- Classification is **binary** (seagrass / non-seagrass); sand and deep water are merged at the classification stage
 
 ## 6. Classification (Section 2.3.4)
 
-Two classifiers compared with the same training set:
-
 | Classifier | Parameters |
 |---|---|
-| Random Forest | 100 trees, √11 ≈ 3 vars/split, seed=42 |
-| SVM (RBF) | Grid search 5×5 = 25 combinations: C ∈ {0.1, 1, 10, 100, 1000}, γ ∈ {0.0001, 0.001, 0.01, 0.1, 1}; **best: C\*=10, γ\*=0.1** |
+| Random Forest | 100 trees, √11 ≈ 3 variables per split, seed = 42 |
+| SVM (RBF) | Grid search 5 × 5 = 25 combinations: C ∈ {0.1, 1, 10, 100, 1000}, γ ∈ {0.0001, 0.001, 0.01, 0.1, 1}; **best: C\* = 10, γ\* = 0.1** |
+
+**RF sensitivity test**: 20 combinations of trees (50, 100, 200, 300, 500) × variables per split (2, 3, 4, 6) under the same 3-fold spatial CV gave mean OA 82.0–83.2% (κ 0.639–0.664); RF is largely insensitive to both parameters and the 100 / 3 configuration was retained.
 
 ## 7. Accuracy assessment (Section 2.3.5)
 
-- **3-fold spatial CV** (validation block rotation: G/O/K)
-- **Metrics**: Overall Accuracy (OA), Cohen's Kappa (κ), Producer's/User's Accuracy
-- **Variable Importance Measure** (RF, Gini decrease)
-- **Landis & Koch (1977) interpretive bands** for κ
+- **3-fold spatial cross-validation** (each block serves once as the validation set)
+- **Metrics**: overall accuracy (OA), Cohen's kappa (κ), producer's / user's accuracy, F1
+- **Variable importance** (RF, Gini decrease)
 
-## 8. Post-classification (Section 2.3.6)
+## 8. Post-classification (Section 2.3.5)
 
-1. **Minimum mapping unit filter** — 4 pixels (≥ 400 m²) connected pixel filter
-2. **Biophysical mask**:
-   - GEBCO depth ≤ 15 m (Traganos & Reinartz 2018)
-   - JRC-based coastal distance ≤ 3 km (Roelfsema et al. 2014)
-3. **RF ∩ SVM intersection map** — high-confidence product: pixels classified as seagrass by **both** classifiers; primary thematic map = SVM
+1. **Minimum mapping unit** — connected patches of fewer than 5 pixels removed (MMU = 5 pixels, 500 m²; Deeks et al., 2024)
+2. **Biophysical mask** — coastal-distance mask from the JRC land mask, **effective distance ≈ 1 km** (see the note in the script, Section 19b). No depth mask.
+3. **RF ∩ SVM agreement map** — pixels classified as seagrass by both classifiers. It expresses agreement between the models, not verified accuracy.
+
+## 9. Results (Section 3)
+
+| Product | Area |
+|---|---|
+| SVM | 3,634 ha |
+| RF | 3,509 ha |
+| RF ∩ SVM (agreement) | 2,991 ha |
+
+In the absence of field validation these areas are **potential seagrass habitat and an upper-bound estimate**.
 
 ---
 
 # Metodoloji — Karadeniz Deniz Çayırı Haritalama
 
-İşlem hattının adım adım açıklaması.
+İşlem hattının adım adım açıklaması. Bölüm numaraları makaleye göredir.
 
 ---
 
 ## 1. Çalışma alanı
 
-- **Coğrafi kapsam**: Batı Karadeniz, İğneada (41,996°K) ile Karaburun (41,342°K) arasında
+- **Coğrafi kapsam**: Türkiye'nin batı Karadeniz kıyısı, Beğendik/İğneada (41,996°K) ile Karaburun (41,342°K) arası
 - **Boylamsal kapsam**: 27,977°–28,785°D
 - **Toplam alan**: ~1.133,51 km² (kıyı uzunluğu ~130 km)
-- **Paftalar**: Sentinel-2 MGRS T35TLG (batı) + T35TMG (doğu)
-- **Su sınıfı**: Durum-2 (optik olarak karmaşık, orta-yüksek bulanıklık)
+- **Paftalar**: dört Sentinel-2 MGRS paftası — T35TNF/T35TNG (batı, 62 görüntü) ve T35TPF/T35TPG (doğu, 93 görüntü)
+- **Su sınıfı**: Durum-2 (optik olarak karmaşık), akarsu ağızlarında Durum-3
 
 ## 2. Veri kaynakları
 
 | Kaynak | Kullanım | Çözünürlük |
 |---|---|---|
-| Sentinel-2 L2A SR_HARMONIZED | Yüzey yansıtımı | 10 m |
-| GEBCO 2023 (topluluk varlığı) | Batimetri maskesi | ~450 m |
-| JRC Küresel Yüzey Suyu | Kara/su maskesi | ~30 m |
-| Kullanıcı tarafından çizilen eğitim poligonları | Deniz çayırı/Kum/Derin su | Vektör |
+| Sentinel-2 L2A SR_HARMONIZED | Yüzey yansıtımı | 10 m analiz ızgarası (B1 60 m ve B5/B11 20 m, GEE varsayılan en yakın komşu yeniden örneklemesi) |
+| JRC Küresel Yüzey Suyu | Kıyı mesafesi maskesi için kara maskesi | ~30 m |
+| Eğitim poligonları | Deniz çayırı / kum / derin su | Vektör ([`data/training_polygons.geojson`](../data/training_polygons.geojson)) |
 
-## 3. Ön işleme hattı — altı ardışık adım
+Batimetri verisi kullanılmamaktadır: önceki sürümlerdeki ETOPO1/GEBCO derinlik maskesi v9'da kaldırılmıştır.
 
-1. **Bulut maskeleme** — QA60 bit 10/11
-2. **Hedley güneş parıltısı düzeltmesi** — görüntü ve pafta bazında referans geometrisi
-3. **Pafta ayrımı** — ~28,30°D boylamında bölme; pafta bazında Hedley + doğrusal radyometrik eşleştirme (Schott 1988 / Yang ve Lo 2000 ortalama-standart sapma)
-4. **%25 persentil mevsimsel bileşik** — 1 Temmuz – 15 Eylül 2025, bulut < %20
-5. **Bulanıklık maskesi** — TI = ρ_KIRMIZI/ρ_YEŞİL < 1,5 (Lacaux vd., 2006)
+## 3. Ön işleme — altı ardışık adım
+
+1. **Bulut maskeleme** — sahne düzeyinde ön filtre (bulut < %20), ardından piksel düzeyinde QA60 bit 10/11
+2. **Güneş parlaması düzeltmesi** (Hedley vd., 2005) — görüntü ve pafta yarısı bazında; derin su pikselleri = MNDWI > 0,5; NIR referansı = 5. persentil; 100'den az derin su pikseli içeren görüntüler düzeltilmeden bırakılır
+3. **25. persentil mevsimsel kompozit** — 1 Temmuz – 15 Eylül 2025
+4. **Doğrusal radyometrik normalizasyon** — batı kompoziti doğu kompozitine eşlenir (Schott vd., 1988; Yang ve Lo, 2000)
+5. **Bulanıklık maskesi** — TI = ρ_KIRMIZI / ρ_YEŞİL < 1,5 (Lacaux vd., 2006)
 6. **Su maskesi** — MNDWI > 0 (Xu, 2006)
 
 ## 4. Öznitelik yığını — 11 öznitelik
@@ -122,51 +128,55 @@ Two classifiers compared with the same training set:
 |---|---|
 | Spektral bantlar | B1, B2, B3, B4, B5 |
 | Su bitki örtüsü indeksi | NDAVI |
-| Su / maskeleme | MNDWI, TI |
-| Batimetri | SDB (Stumpf 2003 log-oran) |
-| Boyut indirgeme | TB1, TB2 (TBA bileşenleri) |
+| Su / maskeleme | MNDWI |
+| Su kalitesi | TI |
+| Batimetri | SDB (Stumpf vd., 2003 log-oran, kalibre edilmemiş) |
+| Boyut indirgeme | TB1, TB2 (B1–B5 üzerinden temel bileşenler) |
 
-**Çıkarılan öznitelikler** (yinelemeli test sonrası):
-- **DII** — literatür incelemesi sonrası çıkarılmıştır (Kuhwald 2021; Mederos-Barrera 2022: bulanık Durum-2 sularında performansı artırmadığı belirlenmiştir)
-- **WAVI** — NDAVI ile korelasyon r ≈ 1,00; gereksiz
-- **NDRE** — en düşük değişken önem katkısı; B5 spektral olarak zaten mevcut; kırmızı kenar su kolonuna zayıf nüfuz etmektedir
+**Çıkarılan**: Derinlikten Bağımsız İndeks (DII); bulanık Durum-2 sularında sınıflandırmayı iyileştirmemektedir (Kuhwald vd., 2021; Mederos-Barrera vd., 2022).
 
 ## 5. Eğitim verisi
 
-- **174 poligon** (ArcGIS Pro'da görsel yorumlama ile oluşturulmuştur)
-  - 71 Deniz çayırı
-  - 51 Kum
-  - 52 Derin su
-- **5 m negatif tampon** (Schütt 2025 karışık piksel filtresi)
-- Mekânsal çapraz doğrulama için **3 enlemsel blok**:
-  - **Blok K** (Kuzey, 41,778°–41,996°K): Beğendik, İğneada
-  - **Blok O** (Orta, 41,560°–41,778°K): Kıyıköy
-  - **Blok G** (Güney, 41,342°–41,560°K): Yalıköy, Karaburun
-- **Z-skoru normalizasyonu** + **deterministik blok bazlı 1:1 alt örnekleme** (koordinat tabanlı anahtar — stokastik `bestEffort` bağımlılığı bulunmamaktadır) → 2.460 dengeli eğitim pikseli
+- Görsel yorumlamayla **174 poligon** (arazi verisi yoktur): 71 deniz çayırı, 51 kum, 52 derin su
+- **Yorumlama kaynakları**: Esri World Imagery altlığı (Vantor Vivid, WorldView-2/3, 0,3–0,5 m), Sentinel-2 kompozit bant kombinasyonları, NDAVI (yalnızca görsel yardımcı, eşik uygulanmamıştır) ve yorumlama anahtarı olarak komşu Bulgaristan kıyısının arazi doğrulamalı *Zostera* poligonları (Berov vd., 2022)
+- Poligonlara **5 m negatif tampon** (karışık piksel filtresi; betiğin uygulama ayrıntısı)
+- Mekânsal çapraz doğrulama için **üç enlemsel blok** (poligonlar merkez enlemine göre atanır; betikteki kodlar köşeli parantezde):
+  - **Blok N** [K] (41,780°K'nın kuzeyi): Beğendik, İğneada
+  - **Blok C** [O] (41,561°–41,780°K): Kıyıköy
+  - **Blok S** [G] (41,561°K'nın güneyi): Yalıköy, Karaburun
+- **Z-skoru normalizasyonu** ve koordinat tabanlı anahtarla **blok bazlı 1:1 alt örnekleme** → **2.460 dengeli piksel** (1.230 deniz çayırı + 1.230 deniz çayırı dışı; N 203 + 203, C 608 + 608, S 419 + 419)
+- Sınıflandırma **ikilidir** (deniz çayırı / deniz çayırı dışı); kum ve derin su sınıflandırma aşamasında birleştirilir
 
 ## 6. Sınıflandırma
 
-Aynı eğitim seti ile iki sınıflandırıcı karşılaştırılmıştır:
-
 | Sınıflandırıcı | Parametreler |
 |---|---|
-| Rastgele Orman (RO) | 100 ağaç, √11 ≈ 3 değişken/bölünme, seed=42 |
-| DVM (RBF) | Izgara araması 5×5 = 25 kombinasyon: C ∈ {0,1; 1; 10; 100; 1000}, γ ∈ {0,0001; 0,001; 0,01; 0,1; 1}; **en iyi: C\*=10, γ\*=0,1** |
+| Rastgele Orman (RO) | 100 ağaç, √11 ≈ 3 değişken/bölünme, seed = 42 |
+| DVM (RBF) | Izgara araması 5 × 5 = 25 kombinasyon: C ∈ {0,1; 1; 10; 100; 1000}, γ ∈ {0,0001; 0,001; 0,01; 0,1; 1}; **en iyi: C\* = 10, γ\* = 0,1** |
+
+**RO duyarlılık testi**: ağaç sayısı (50, 100, 200, 300, 500) × bölünme başına değişken (2, 3, 4, 6) için 20 kombinasyon aynı 3 katlı mekânsal çapraz doğrulamayla denenmiş, ortalama GD %82,0–83,2 (κ 0,639–0,664) bulunmuştur; RO her iki parametreye de büyük ölçüde duyarsızdır ve 100 / 3 ayarı korunmuştur.
 
 ## 7. Doğruluk değerlendirmesi
 
-- **3 katlı mekânsal çapraz doğrulama** (doğrulama bloğu rotasyonu: G/O/K)
-- **Metrikler**: Genel Doğruluk (GD), Cohen's Kappa (κ), Üretici Doğruluğu (ÜD) / Kullanıcı Doğruluğu (KD)
-- **Değişken Önem Ölçüsü** (RO, Gini azalması)
-- κ için **Landis ve Koch (1977) yorumlama bantları**
+- **3 katlı mekânsal çapraz doğrulama** (her blok bir kez doğrulama kümesi olur)
+- **Metrikler**: genel doğruluk (GD), Cohen's kappa (κ), üretici / kullanıcı doğruluğu, F1
+- **Değişken önemi** (RO, Gini azalması)
 
 ## 8. Sınıflandırma sonrası
 
-1. **Minimum haritalama birimi filtresi** — 4 piksel (≥ 400 m²) bağlantılı piksel filtresi
-2. **Biyofiziksel maske**:
-   - GEBCO derinlik ≤ 15 m (Traganos ve Reinartz, 2018)
-   - JRC tabanlı kıyı mesafesi ≤ 3 km (Roelfsema vd., 2014)
-3. **RO ∩ DVM kesişim haritası** — yüksek güvenilirlikli ürün: her iki sınıflandırıcı tarafından da deniz çayırı olarak sınıflandırılan pikseller; birincil tematik harita = DVM
+1. **Minimum haritalama birimi** — 5 pikselden küçük bağlantılı yamalar elenir (5 piksel, 500 m²; Deeks vd., 2024)
+2. **Biyofiziksel maske** — JRC kara maskesinden kıyı mesafesi maskesi, **etkin mesafe ≈ 1 km** (betikte Bölüm 19b'deki nota bakınız). Derinlik maskesi yoktur.
+3. **RO ∩ DVM uyum haritası** — her iki sınıflandırıcının da deniz çayırı olarak sınıflandırdığı pikseller. Modeller arası uyumu gösterir, doğrulanmış doğruluğu değil.
+
+## 9. Sonuçlar
+
+| Ürün | Alan |
+|---|---|
+| DVM | 3.634 ha |
+| RO | 3.509 ha |
+| RO ∩ DVM (uyum) | 2.991 ha |
+
+Arazi doğrulaması bulunmadığından bu alanlar **olası deniz çayırı habitatı ve üst sınır tahmini** olarak değerlendirilmelidir.
 
 ---
 

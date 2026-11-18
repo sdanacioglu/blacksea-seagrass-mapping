@@ -22,7 +22,7 @@ Upload the following to your GEE Cloud Project as assets:
 - Asset path: `projects/YOUR_GEE_PROJECT/assets/STUDY_AREA_ASSET`
 
 ### (b) Training polygons
-- A polygon feature collection with one **`class_code`** integer attribute:
+- A polygon feature collection with one **`class_code`** integer attribute (the polygons of this study are provided in [`data/training_polygons.geojson`](../data/training_polygons.geojson); derive `class_code` from its `class_sub` field):
   - `1` = Seagrass
   - `2` = Sand / bare substrate
   - `3` = Deep water
@@ -48,7 +48,7 @@ Upload the following to your GEE Cloud Project as assets:
 - Image counts per longitudinal half (e.g., 62 west, 93 east)
 - Linear matching confirmation
 - Composite pixel count (~150,000)
-- Polygon counts per block (G/O/K)
+- Polygon counts per block (script codes G/O/K = blocks S/C/N of the paper)
 - Balanced sample sizes (2,460 pixels)
 - 3-fold CV results for RF and SVM (with grid search)
 - Variable importance scores for RF (11 features)
@@ -92,11 +92,21 @@ Output: CSV with all 11 feature values per pixel, joined with class labels.
 
 | Fold | RF — OA / κ | SVM — OA / κ |
 |---|---|---|
-| Block G (South) | 0.681 / 0.363 | 0.697 / 0.394 |
-| Block O (Middle) | 0.840 / 0.681 | 0.900 / 0.801 |
-| Block K (North) | 0.973 / 0.946 | 0.985 / 0.970 |
+| Block S (South; script code G) | 0.681 / 0.363 | 0.697 / 0.394 |
+| Block C (Centre; script code O) | 0.840 / 0.681 | 0.900 / 0.801 |
+| Block N (North; script code K) | 0.973 / 0.946 | 0.985 / 0.970 |
 
-**Reproducibility note**: The pipeline uses a **deterministic coordinate-based hash key** for per-block 1:1 undersampling. Repeated runs produce **identical** OA/κ values — no stochastic variation.
+**Reproducibility note**: The pipeline uses a coordinate-based key for per-block 1:1 undersampling, so the balanced sample (2,460 pixels) is the same in every run. The SVM results are stable; the RF results were observed to vary slightly between runs of the same configuration (mean OA 0.828–0.832). A sensitivity test over 20 RF parameter combinations (50–500 trees × 2–6 variables per split) gave mean OA 0.820–0.832 and κ 0.639–0.664.
+
+### Area estimates (after MMU filter and coastal mask)
+
+| Product | Area |
+|---|---|
+| SVM | 3,634 ha |
+| RF | 3,509 ha |
+| RF ∩ SVM (agreement) | 2,991 ha |
+
+**Note on the coastal mask**: the script computes the distance to land in pixels and multiplies it by 30 (Section 19b, threshold 3,000). Evaluated on the 10 m export grid, this corresponds to an effective distance of **≈ 1 km**, which is the value reported in the paper. The published areas were produced with this setting.
 
 ---
 
@@ -107,5 +117,5 @@ Output: CSV with all 11 feature values per pixel, joined with class labels.
 | `Earth Engine memory capacity exceeded` | Per-image clip() before composite | Clip only on final composite, not per-image |
 | `Computation timed out` (interactive area calc) | Interactive `reduceRegion` exceeds 5-min limit | Pipeline uses `Export.table.toDrive` batch task for final area values |
 | Tile seam visible in output | Linear matching skipped | Verify Section 4b ran without error |
-| Open-sea false positives | Biophysical mask not applied | Verify GEBCO + JRC datasets accessible (check Section 20b) |
+| Open-sea false positives | Biophysical mask not applied | Verify the JRC dataset is accessible (check Section 19b) |
 | Stacked feature export `mixed dataType` error | Heterogeneous band types | Pipeline uses `.toFloat()` and `bounds()` region + COG profile |

@@ -600,9 +600,14 @@ var rfSeagrass  = rfFiltered.eq(1).selfMask().rename('RF_seagrass');
 var svmSeagrass = svmFiltered.eq(1).selfMask().rename('SVM_seagrass');
 
 // =============================================================================
-// 19b. BIOPHYSICAL MASK — coastal distance only (≤ 3 km)
+// 19b. BIOPHYSICAL MASK — coastal distance only (effective ≈ 1 km)
 // -----------------------------------------------------------------------------
-// JRC Global Surface Water → land mask → distance transform → 3 km buffer.
+// JRC Global Surface Water → land mask → distance transform → coastal buffer.
+// NOTE: the distance is computed in pixels and multiplied by 30 (nominal JRC
+// pixel size). On the 10 m export grid one pixel is 10 m, so the threshold of
+// 3000 corresponds to an effective distance of ≈ 1 km from land. This is the
+// value reported in the paper; the published areas were produced with this
+// setting, which is therefore left unchanged.
 // ETOPO1/GEBCO depth mask removed in v9: SDB already provides indirect depth
 // constraint; Secchi depth 2–5 m limits optical penetration in Case-2 waters.
 // =============================================================================
@@ -616,7 +621,7 @@ var coastMask = distFromLand_m.lte(3000);
 var bioMask = coastMask;
 
 print('=== BIOPHYSICAL MASK ===');
-print('Coastal distance ≤ 3 km (JRC)');
+print('Coastal distance mask (JRC), effective ≈ 1 km on the 10 m grid');
 
 var rfSG_masked  = rfSeagrass.updateMask(bioMask).rename('RF_seagrass_masked');
 var svmSG_masked = svmSeagrass.updateMask(bioMask).rename('SVM_seagrass_masked');
@@ -680,7 +685,7 @@ Map.addLayer(svmSG_masked,
 Map.addLayer(consensusSeagrass,
   {palette: ['red']}, 'Consensus RF ∩ SVM (masked)', true);
 Map.addLayer(coastMask.selfMask(),
-  {palette: ['yellow']}, 'Mask: coast ≤ 3 km', false, 0.3);
+  {palette: ['yellow']}, 'Mask: coast ≈ 1 km', false, 0.3);
 
 // =============================================================================
 // 22. EXPORT — ASSET + DRIVE
